@@ -1,0 +1,36 @@
+services:
+  # Backend API Service
+  - type: web
+    name: mini-ims-backend
+    runtime: node
+    plan: free
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - fromGroup: mongo-connection
+
+  # MongoDB Service
+  - type: pserv
+    name: mini-ims-mongodb
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile.mongodb
+    envVars:
+      - key: MONGO_INITDB_ROOT_USERNAME
+        value: admin
+      - key: MONGO_INITDB_ROOT_PASSWORD
+        generateValue: true
+      - key: MONGO_INITDB_DATABASE
+        value: mini-ims
+
+envGroups:
+  - name: mongo-connection
+    envVars:
+      - key: MONGODB_URI
+        value: mongodb://${mini-ims-mongodb.MONGO_INITDB_ROOT_USERNAME}:${mini-ims-mongodb.MONGO_INITDB_ROOT_PASSWORD}@${mini-ims-mongodb.service.host}:27017/${mini-ims-mongodb.MONGO_INITDB_DATABASE}?authSource=admin
