@@ -37,6 +37,18 @@ export const createProduct = createAsyncThunk(
   }
 );
 
+export const bulkCreateProducts = createAsyncThunk(
+  'products/bulkCreateProducts',
+  async (products, { rejectWithValue }) => {
+    try {
+      const { data } = await productsApi.bulkCreateProducts(products);
+      return data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  }
+);
+
 export const updateProduct = createAsyncThunk(
   'products/updateProduct',
   async ({ id, data: productData }, { rejectWithValue }) => {

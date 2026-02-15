@@ -66,6 +66,22 @@ router.post(
   validate,
   wrap(productController.create)
 );
+router.post(
+  '/products/bulk',
+  authenticate,
+  requireRoles('admin'),
+  [
+    body('products').isArray().withMessage('Products array required'),
+    body('products.*.name').trim().notEmpty().withMessage('Name required'),
+    body('products.*.sku').trim().notEmpty().withMessage('SKU required'),
+    body('products.*.category').trim().notEmpty().withMessage('Category required'),
+    body('products.*.price').isFloat({ min: 0 }).withMessage('Price must be >= 0'),
+    body('products.*.quantity').optional().isInt({ min: 0 }),
+    body('products.*.lowStockThreshold').optional().isInt({ min: 0 }),
+  ],
+  validate,
+  wrap(productController.bulkCreate)
+);
 router.patch(
   '/products/:id',
   authenticate,

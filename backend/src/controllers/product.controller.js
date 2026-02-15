@@ -5,6 +5,12 @@ export const create = async (req, res) => {
   res.status(201).json({ success: true, data: product });
 };
 
+export const bulkCreate = async (req, res) => {
+  const { products } = req.body;
+  const results = await productService.bulkCreateProducts(products);
+  res.status(201).json({ success: true, data: results });
+};
+
 export const update = async (req, res) => {
   const product = await productService.updateProduct(req.params.id, req.body);
   res.json({ success: true, data: product });

@@ -10,6 +10,30 @@ export const createProduct = async (data) => {
   return product;
 };
 
+export const bulkCreateProducts = async (products) => {
+  const results = {
+    success: [],
+    errors: []
+  };
+
+  for (const productData of products) {
+    try {
+      const product = await Product.create({
+        ...productData,
+        sku: productData.sku?.toUpperCase(),
+      });
+      results.success.push(product);
+    } catch (error) {
+      results.errors.push({
+        data: productData,
+        error: error.message
+      });
+    }
+  }
+
+  return results;
+};
+
 export const updateProduct = async (id, data) => {
   const product = await Product.findByIdAndUpdate(
     id,

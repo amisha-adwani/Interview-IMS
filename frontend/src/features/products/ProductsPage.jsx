@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchProducts, createProduct, updateProduct, deleteProduct, clearError } from './productsSlice';
+import { fetchProducts, createProduct, updateProduct, deleteProduct, bulkCreateProducts, clearError } from './productsSlice';
 import PageLayout from '../../components/layout/PageLayout';
 import ProductForm from '../../components/features/ProductForm';
+import CSVImportModal from '../../components/features/CSVImportModal';
 import Modal from '../../components/common/Modal';
 import Button from '../../components/common/Button';
 import { formatCurrency } from '../../utils/formatters';
+import { exportToCSV } from '../../utils/csvUtils';
 import { useAuth } from '../../hooks/useAuth';
 import RequireRole from '../auth/RequireRole';
 
@@ -19,6 +21,7 @@ export default function ProductsPage() {
   const [lowStock, setLowStock] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [csvImportOpen, setCsvImportOpen] = useState(false);
 
   useEffect(() => {
     dispatch(
@@ -67,15 +70,69 @@ export default function ProductsPage() {
     }
   };
 
+  const handleExportCSV = () => {
+    const csvData = items.map(product => ({
+      name: product.name,
+      sku: product.sku,
+      category: product.category,
+      price: product.price,
+      quantity: product.quantity,
+      lowStockThreshold: product.lowStockThreshold || 5
+    }));
+    
+    exportToCSV(csvData, 'products');
+  };
+
+  const handleCSVImport = async (csvData) => {
+    const validProducts = csvData.filter(row => 
+      row.name?.trim() && row.sku?.trim() && row.category?.trim()
+    );
+    
+    if (validProducts.length === 0) {
+      alert('No valid products found in CSV');
+      return;
+    }
+    
+    const productData = validProducts.map(row => ({
+      name: row.name.trim(),
+      sku: row.sku.trim(),
+      category: row.category.trim(),
+      price: parseFloat(row.price) || 0,
+      quantity: parseInt(row.quantity, 10) || 0,
+      lowStockThreshold: parseInt(row.lowStockThreshold, 10) || 5
+    }));
+    
+    const result = await dispatch(bulkCreateProducts(productData));
+    
+    setCsvImportOpen(false);
+    
+    if (result.error) {
+      alert(`Import failed: ${result.error}`);
+    } else {
+      const { success, errors } = result.payload?.data || { success: [], errors: [] };
+      alert(`Import completed! Success: ${success.length}, Errors: ${errors.length}`);
+    }
+    
+    dispatch(fetchProducts({ page, limit: 20, search, category, lowStock }));
+  };
+
   const isLowStock = (p) => p.quantity <= (p.lowStockThreshold ?? 5);
 
   return (
     <PageLayout>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-white">Products</h1>
-        <RequireRole roles={['admin']}>
-          <Button onClick={handleCreate}>Add Product</Button>
-        </RequireRole>
+        <div className="flex gap-2">
+          <RequireRole roles={['admin']}>
+            <Button variant="secondary" onClick={handleExportCSV}>
+              Export CSV
+            </Button>
+            <Button variant="secondary" onClick={() => setCsvImportOpen(true)}>
+              Import CSV
+            </Button>
+            <Button onClick={handleCreate}>Add Product</Button>
+          </RequireRole>
+        </div>
       </div>
 
       <div className="flex gap-4 mb-6 flex-wrap">
@@ -204,6 +261,13 @@ export default function ProductsPage() {
           loading={loading}
         />
       </Modal>
+
+      <CSVImportModal
+        isOpen={csvImportOpen}
+        onClose={() => setCsvImportOpen(false)}
+        onImport={handleCSVImport}
+        loading={loading}
+      />
     </PageLayout>
   );
 }
