@@ -10,10 +10,10 @@ const app = express();
 app.use(helmet());
 app.use(
   cors({
-    origin: ['https://interview-ims.onrender.com', 'http://localhost:3000'],
+    origin: ['https://interview-ims.onrender.com', 'https://interview-ims-1.onrender.com', 'http://localhost:3000'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Referer'],
   })
 );
 
